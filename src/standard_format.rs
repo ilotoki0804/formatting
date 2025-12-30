@@ -1,8 +1,43 @@
 // use indicatif::ProgressStyle;
-use anyhow::{anyhow, bail};
 use regex::Regex;
 
 use std::sync::OnceLock;
+
+#[derive(thiserror::Error, Debug)]
+pub enum StandardFormatError {
+    // Failed to pass standard format regex
+    #[error("Failed to interpret {0:?} as standard format.")]
+    InvalidFormat(String),
+    #[error("`=` align can't be used along with truncate(!).")]
+    TruncatedSignFirst,
+    // #[error("Align string can't be empty.")]
+    #[error("The align char should be one of <, >, =, ^, or `` but received {:?}.", .0.map(|chr| chr.to_string()).unwrap_or("<empty>".to_string()))]
+    InvalidAlign(Option<char>),
+    // #[error("Sign character can't be empty.")]
+    #[error("The sign character should be one of -, +, or space, but received {:?}", .0.map(|chr| chr.to_string()).unwrap_or("<empty>".to_string()))]
+    InvalidSign(Option<char>),
+    // #[error("Grouping character can't be empty.")]
+    #[error("The grouping character must be one of , or _, but received {:?}.", .0.map(|chr| chr.to_string()).unwrap_or("<empty>".to_string()))]
+    InvalidGrouping(Option<char>),
+    // #[error("The format type character can't be empty.")]
+    #[error("The format type character must be one of b, c, d, o, s, x, X, or %, but received {:?}.", .0.map(|chr| chr.to_string()).unwrap_or("<empty>".to_string()))]
+    InvalidFormatType(Option<char>),
+    // runtime errors
+    #[error("Debug trait is not implemented for the type of {0:?} key.")]
+    DebugNotImplemented(Option<String>),
+    #[error("Display trait is not implemented for the type of {0:?} key.")]
+    DisplayNotImplemented(Option<String>),
+    #[error("Format type {0:?} is not suitable for string.")]
+    InvalidFormatTypeForString(Option<StandardFormatType>),
+    #[error("Format type {0:?} is only valid for floats, not integers.")]
+    InvalidFormatTypeForInteger(Option<StandardFormatType>),
+    #[error("Format type {0:?} is only valid for integers, not floats.")]
+    InvalidFormatTypeForFloat(Option<StandardFormatType>),
+    #[error("Minimum number {0} cannot be formatted.")]
+    MinimumInteger(String),
+}
+
+pub type StandardResult<T> = std::result::Result<T, StandardFormatError>;
 
 fn standard_format() -> &'static Regex {
     static STANDARD_FORMAT: OnceLock<Regex> = OnceLock::new();
@@ -13,14 +48,14 @@ fn standard_format() -> &'static Regex {
     })
 }
 
-pub(super) fn parse_standard_format(format: &str) -> Option<StandardFormat> {
+pub(super) fn parse_standard_format(format: &str) -> Result<StandardFormat, StandardFormatError> {
     if format.is_empty() {
-        return Some(Default::default());
+        return Ok(Default::default());
     }
 
     // unwrap()로 처리된 구문의 경우 regex에 의해 성공적으로 파싱되었다면 절대 일어날 수 없는 일들이기 때문에 unwrap로 처리함.
     // 만약 unwrap() 구문으로 인해 panic이 발생할 경우 regex 구문이나 코드에 문제가 있다는 의미이니 수정해야 함.
-    let captured = standard_format().captures(format)?;
+    let captured = standard_format().captures(format).ok_or_else(|| StandardFormatError::InvalidFormat(format.to_string()))?;
     // let captured = dbg!(captured);
     let format_option = captured.name("options").map(|_| {
         let zero_option = captured.name("zero_option").is_some();
@@ -89,7 +124,7 @@ pub(super) fn parse_standard_format(format: &str) -> Option<StandardFormat> {
         .name("type")
         .map(|matched| matched.as_str().try_into().unwrap());
 
-    Some(StandardFormat {
+    Ok(StandardFormat {
         filler,
         sign,
         z_option,
@@ -108,7 +143,7 @@ pub fn fill(
     truncate: bool,
     sign: Option<char>,
     filler: char,
-) -> anyhow::Result<String> {
+) -> StandardResult<String> {
     if !matches!(align, StandardFormatAlign::SignFirst)
         && let Some(sign) = sign
     {
@@ -129,7 +164,7 @@ pub fn fill(
             StandardFormatAlign::Left => (0, cols - excess),
             StandardFormatAlign::Right => (excess, cols),
             StandardFormatAlign::SignFirst => {
-                bail!("`=` align can't be used along with truncate(!).")
+                return Err(StandardFormatError::TruncatedSignFirst);
             }
             StandardFormatAlign::Center => (excess / 2, cols - excess.saturating_sub(excess / 2)),
         };
@@ -198,28 +233,28 @@ pub enum StandardFormatAlign {
 }
 
 impl TryFrom<&str> for StandardFormatAlign {
-    type Error = anyhow::Error;
+    type Error = StandardFormatError;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    fn try_from(value: &str) -> StandardResult<Self> {
         Self::try_from(
             value
                 .chars()
                 .next()
-                .ok_or_else(|| anyhow!("Align string can't be empty."))?,
+                .ok_or(StandardFormatError::InvalidAlign(None))?,
         )
     }
 }
 
 impl TryFrom<char> for StandardFormatAlign {
-    type Error = anyhow::Error;
+    type Error = StandardFormatError;
 
-    fn try_from(value: char) -> Result<Self, Self::Error> {
+    fn try_from(value: char) -> StandardResult<Self> {
         match value {
             '<' => Ok(Self::Left),
             '>' => Ok(Self::Right),
             '=' => Ok(Self::SignFirst),
             '^' => Ok(Self::Center),
-            _ => bail!("Align char should be one of <, >, =, ^, or `` but recieved {value}."),
+            _ => Err(StandardFormatError::InvalidAlign(Some(value))),
         }
     }
 }
@@ -243,29 +278,27 @@ pub enum StandardFormatSign {
 }
 
 impl TryFrom<&str> for StandardFormatSign {
-    type Error = anyhow::Error;
+    type Error = StandardFormatError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Self::try_from(
             value
                 .chars()
                 .next()
-                .ok_or_else(|| anyhow!("Align string can't be empty."))?,
+                .ok_or(StandardFormatError::InvalidSign(None))?,
         )
     }
 }
 
 impl TryFrom<char> for StandardFormatSign {
-    type Error = anyhow::Error;
+    type Error = StandardFormatError;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
         match value {
             '-' => Ok(Self::Minus),
             '+' => Ok(Self::Plus),
             ' ' => Ok(Self::Space),
-            _ => {
-                bail!("The sign charactor should be one of -, +, or space, but received {value:?}")
-            }
+            _ => Err(StandardFormatError::InvalidSign(Some(value)))
         }
     }
 }
@@ -283,30 +316,30 @@ impl From<StandardFormatSign> for char {
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum StandardFormatGrouping {
     Comma,
-    Underbar,
+    Underscore,
 }
 
 impl TryFrom<&str> for StandardFormatGrouping {
-    type Error = anyhow::Error;
+    type Error = StandardFormatError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Self::try_from(
             value
                 .chars()
                 .next()
-                .ok_or_else(|| anyhow!("Align string can't be empty."))?,
+                .ok_or(StandardFormatError::InvalidGrouping(None))?,
         )
     }
 }
 
 impl TryFrom<char> for StandardFormatGrouping {
-    type Error = anyhow::Error;
+    type Error = StandardFormatError;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
         match value {
             ',' => Ok(Self::Comma),
-            '_' => Ok(Self::Underbar),
-            _ => bail!("The grouping charactor must be one of , or _, but received {value:?}."),
+            '_' => Ok(Self::Underscore),
+            _ => Err(StandardFormatError::InvalidGrouping(Some(value))),
         }
     }
 }
@@ -315,7 +348,7 @@ impl From<StandardFormatGrouping> for char {
     fn from(value: StandardFormatGrouping) -> Self {
         match value {
             StandardFormatGrouping::Comma => ',',
-            StandardFormatGrouping::Underbar => '_',
+            StandardFormatGrouping::Underscore => '_',
         }
     }
 }
@@ -338,20 +371,20 @@ pub enum StandardFormatType {
 }
 
 impl TryFrom<&str> for StandardFormatType {
-    type Error = anyhow::Error;
+    type Error = StandardFormatError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Self::try_from(
             value
                 .chars()
                 .next()
-                .ok_or_else(|| anyhow!("Align string can't be empty."))?,
+                .ok_or(StandardFormatError::InvalidFormatType(None))?,
         )
     }
 }
 
 impl TryFrom<char> for StandardFormatType {
-    type Error = anyhow::Error;
+    type Error = StandardFormatError;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
         match value {
@@ -365,9 +398,7 @@ impl TryFrom<char> for StandardFormatType {
             'd' => Ok(Self::Decimal),
             'f' => Ok(Self::FloatLower),
             'F' => Ok(Self::FloatUpper),
-            _ => bail!(
-                "The format type must be one of b, c, d, o, s, x, X, or %, but received {value:?}."
-            ),
+            _ => Err(StandardFormatError::InvalidFormatType(Some(value))),
         }
     }
 }

@@ -1,26 +1,27 @@
-use anyhow::bail;
-
-use crate::StandardFormatType;
+use crate::{StandardFormatType, StandardFormatError};
 
 use super::*;
 
 const WARN_FOR_USELESS_OPTIONS: bool = cfg!(debug_assertions);
 
 pub trait Formattable {
-    fn custom_format(&self, _: &str) -> anyhow::Result<String> {
-        bail!("This type is not formattable with arbitrary format.")
+    // type Error;
+
+    // fn custom_format(&self, _: &str) -> Result<String, Self::Error> {
+    fn custom_format(&self, _: &str) -> TemplateResult<String> {
+        Err(TemplateError::NoViableCustomFormat)
     }
-    fn standard_format(&self, format: StandardFormat) -> anyhow::Result<String>;
+    fn standard_format(&self, format: StandardFormat) -> Result<String, StandardFormatError>;
 }
 
 macro_rules! impl_standard_format {
     (display) => {
-        impl_standard_format!(@normal_standard_format, __display_stringfy__);
+        impl_standard_format!(@normal_standard_format, __display_stringify__);
     };
     (debug) => {
-        impl_standard_format!(@normal_standard_format, __debug_stringfy__);
+        impl_standard_format!(@normal_standard_format, __debug_stringify__);
     };
-    (__display_stringfy__, $format:ident, $self:ident) => {
+    (__display_stringify__, $format:ident, $self:ident) => {
         match (
             $format.sharp_option,
             matches!($format.format_type, Some(StandardFormatType::Debug)),
@@ -31,24 +32,21 @@ macro_rules! impl_standard_format {
             (false, false) => $self.to_string(),
         }
     };
-    (__debug_stringfy__, $format:ident, $self:ident) => {
+    (__debug_stringify__, $format:ident, $self:ident) => {
         match (
             $format.sharp_option,
             matches!($format.format_type, Some(StandardFormatType::Debug)),
         ) {
             (true, true) => format!("{:#?}", $self),
-            (true, false) => bail!("Display trait is not implemented."),
+            (true, false) => return Err(StandardFormatError::DebugNotImplemented(None)),
             (false, true) => format!("{:?}", $self),
-            (false, false) => bail!("Display trait is not implemented."),
+            (false, false) => return Err(StandardFormatError::DisplayNotImplemented(None)),
         }
     };
-    (@normal_standard_format, $stringfy_method:ident) => {
-        fn standard_format(&self, format: StandardFormat) -> anyhow::Result<String> {
+    (@normal_standard_format, $stringify_method:ident) => {
+        fn standard_format(&self, format: StandardFormat) -> $crate::StandardResult<String> {
             if !matches!(format.format_type, None | Some(StandardFormatType::Debug | StandardFormatType::String)) {
-                bail!(
-                    "Unexpected format type for string: {:?}",
-                    format.format_type
-                );
+                return Err(StandardFormatError::InvalidFormatTypeForString(format.format_type));
             }
 
             if WARN_FOR_USELESS_OPTIONS {
@@ -66,11 +64,11 @@ macro_rules! impl_standard_format {
                 }
             }
 
-            let stringfied = impl_standard_format!($stringfy_method, format, self);
+            let stringified = impl_standard_format!($stringify_method, format, self);
 
             if let Some(filler) = format.filler {
                 let result = fill(
-                    stringfied,
+                    stringified,
                     format.digit.map(|value| value as usize),
                     filler.align.unwrap_or(StandardFormatAlign::Left),
                     filler.truncate,
@@ -79,7 +77,7 @@ macro_rules! impl_standard_format {
                 )?;
                 Ok(result)
             } else {
-                Ok(stringfied)
+                Ok(stringified)
             }
         }
     };
@@ -93,7 +91,7 @@ macro_rules! impl_standard_format {
         {
             // Self::MIN인 경우 abs() 메서드에서 패닉이 발생함 :/
             if *$self == Self::MIN {
-                bail!("Minimum number {} cannot be formatted.", $self);
+                return Err(StandardFormatError::MinimumInteger($self.to_string()))
             }
             let num = $self.abs();
             let format_type = $format.format_type.unwrap_or(StandardFormatType::Decimal);
@@ -107,10 +105,7 @@ macro_rules! impl_standard_format {
                 StandardFormatType::FloatLower
                 | StandardFormatType::FloatUpper
                 | StandardFormatType::Percent => {
-                    bail!(
-                        "{:?} format type is only valid for floats, not integer.",
-                        $format.format_type
-                    )
+                    return Err(StandardFormatError::InvalidFormatTypeForInteger($format.format_type));
                 }
             };
 
@@ -143,10 +138,7 @@ macro_rules! impl_standard_format {
                 StandardFormatType::FloatLower
                 | StandardFormatType::FloatUpper
                 | StandardFormatType::Percent => {
-                    bail!(
-                        "{:?} format type is only valid for floats, not integer.",
-                        $format.format_type
-                    )
+                    return Err(StandardFormatError::InvalidFormatTypeForInteger($format.format_type));
                 }
             };
 
@@ -164,7 +156,7 @@ macro_rules! impl_standard_format {
         }
     };
     (@integer_standard_format, $signed:ident) => {
-        fn standard_format(&self, format: StandardFormat) -> anyhow::Result<String> {
+        fn standard_format(&self, format: StandardFormat) -> $crate::StandardResult<String> {
             if matches!(
                 format.format_type,
                 Some(StandardFormatType::Debug | StandardFormatType::String)
@@ -211,7 +203,7 @@ macro_rules! impl_standard_format {
         }
     };
     (float) => {
-        fn standard_format(&self, format: StandardFormat) -> anyhow::Result<String> {
+        fn standard_format(&self, format: StandardFormat) -> $crate::StandardResult<String> {
             if matches!(
                 format.format_type,
                 Some(StandardFormatType::Debug | StandardFormatType::String)
@@ -242,10 +234,7 @@ macro_rules! impl_standard_format {
                 | StandardFormatType::HexUpper
                 | StandardFormatType::Binary
                 | StandardFormatType::Decimal => {
-                    bail!(
-                        "{:?} format type is only valid for integer, not floats.",
-                        format.format_type
-                    )
+                    return Err(StandardFormatError::InvalidFormatTypeForFloat(format.format_type));
                 }
                 StandardFormatType::Debug | StandardFormatType::String => panic!("Already handled."),
                 StandardFormatType::FloatLower => {
@@ -334,7 +323,7 @@ impl<T: chrono::TimeZone> Formattable for chrono::DateTime<T>
 {
     impl_standard_format!(debug);
 
-    fn custom_format(&self, format: &str) -> anyhow::Result<String> {
+    fn custom_format(&self, format: &str) -> TemplateResult<String> {
         Ok(self.format(format).to_string())
     }
 }

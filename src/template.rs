@@ -1,12 +1,31 @@
 // indicatif = "0.18.3"에서 가져온 코드 (MIT License)
 // use indicatif::ProgressStyle;
-use std::{collections::HashMap, fmt, mem, str::FromStr};
+use std::{collections::HashMap, mem, str::FromStr};
 
-use anyhow::{Result, anyhow, bail};
-
-use crate::{StandardFormat, parse_standard_format};
+use crate::{StandardFormat, StandardFormatError, parse_standard_format};
 
 use super::formattable::Formattable;
+
+#[derive(thiserror::Error, Debug)]
+pub enum TemplateError {
+    #[error("This type is not formattable with arbitrary format.")]
+    NoViableCustomFormat,
+    #[error("Key {0:?} is not found.")]
+    KeyNotFound(String),
+    // TODO: anyhow에서 실제 오류로 변환하기
+    #[error("Key {0:?} is not found.")]
+    StandardFormatError(StandardFormatError),
+    // #[error("TemplateError: unexpected termination in state {:?}")]
+    #[error("TemplateError: unexpected character {state:?} in state {next:?}")]
+    UnexpectedState {
+        state: State,
+        next: Option<char>,
+    },
+    #[error(transparent)]
+    FormatError(#[from] anyhow::Error),
+}
+
+pub type TemplateResult<T> = std::result::Result<T, TemplateError>;
 
 pub trait Getter {
     fn get_formattable(&self, key: &str) -> Option<&dyn Formattable>;
@@ -59,7 +78,7 @@ impl Getter for &[Box<dyn Formattable>] {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum State {
+pub enum State {
     Literal,
     MaybeOpen,
     DoubleClose,
@@ -93,11 +112,11 @@ pub struct Template {
 }
 
 impl Template {
-    pub fn format(&self, key_getter: &dyn Getter) -> Result<String> {
-        self.format_ommitable(key_getter, true)
+    pub fn format(&self, key_getter: &dyn Getter) -> TemplateResult<String> {
+        self.format_omissible(key_getter, true)
     }
 
-    fn format_ommitable(&self, mapping: &dyn Getter, no_key_ok: bool) -> Result<String> {
+    fn format_omissible(&self, mapping: &dyn Getter, no_key_ok: bool) -> TemplateResult<String> {
         use TemplatePart::*;
         let mut result = String::new();
         let mut index = 0;
@@ -120,19 +139,16 @@ impl Template {
                         if let Some(custom_format) = custom_format {
                             let result = formattable.custom_format(custom_format)?;
                             if let Some(standard_format) = standard_format {
-                                result.standard_format(standard_format.clone())?
+                                result.standard_format(standard_format.clone()).map_err(TemplateError::StandardFormatError)?
                             } else {
                                 result
                             }
                         } else {
-                            formattable.standard_format(standard_format.clone().unwrap_or_default())?
+                            formattable.standard_format(standard_format.clone().unwrap_or_default()).map_err(TemplateError::StandardFormatError)?
                         }
                     } else {
                         if !no_key_ok {
-                            bail!(
-                                "Key {:?} is not found.",
-                                key.as_ref().unwrap_or(&index.to_string())
-                            );
+                            return Err(TemplateError::KeyNotFound(key.clone().unwrap_or(index.to_string())));
                         }
                         String::new()
                     };
@@ -145,9 +161,9 @@ impl Template {
 }
 
 impl FromStr for Template {
-    type Err = anyhow::Error;
+    type Err = TemplateError;
 
-    fn from_str(s: &str) -> anyhow::Result<Self> {
+    fn from_str(s: &str) -> TemplateResult<Self> {
         use State::*;
         let mut state = Literal;
         let mut parts = vec![];
@@ -199,8 +215,7 @@ impl FromStr for Template {
                     let format = if taken.is_empty() {
                         None
                     } else {
-                        Some(parse_standard_format(&taken)
-                            .ok_or_else(|| anyhow!("Failed to parse as standard format: {taken}"))?)
+                        Some(parse_standard_format(&taken).map_err(TemplateError::StandardFormatError)?)
                     };
                     let custom_format = mem::take(&mut custom_format_buffer);
                     let key = mem::take(&mut buffer);
@@ -227,11 +242,10 @@ impl FromStr for Template {
                     CustomFormat
                 }
                 (st, chr) => {
-                    return Err(TemplateError {
+                    return Err(TemplateError::UnexpectedState {
                         next: Some(chr),
                         state: st,
-                    }
-                    .into());
+                    });
                 }
             };
         }
@@ -242,38 +256,12 @@ impl FromStr for Template {
                     parts.push(TemplatePart::Literal(buffer))
                 }
             }
-            _ => return Err(TemplateError { state, next: None }.into()),
+            _ => return Err(TemplateError::UnexpectedState { state, next: None }),
         }
 
         Ok(Self { parts })
     }
 }
-
-#[derive(Debug)]
-pub struct TemplateError {
-    state: State,
-    next: Option<char>,
-}
-
-impl fmt::Display for TemplateError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(next) = self.next {
-            write!(
-                f,
-                "TemplateError: unexpected character {:?} in state {:?}",
-                next, self.state
-            )
-        } else {
-            write!(
-                f,
-                "TemplateError: unexpected termination in state {:?}",
-                self.state
-            )
-        }
-    }
-}
-
-impl std::error::Error for TemplateError {}
 
 #[cfg(test)]
 mod test {
