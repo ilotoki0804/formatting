@@ -6,7 +6,7 @@ description = "Dynamic formatter for Rust"
 license = "MIT OR Apache-2.0"
 
 [features]
-default = ["chrono"]
+default = []
 
 [dependencies]
 anyhow = { version = "1.0.100", features = ["backtrace"], optional = true }
