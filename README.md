@@ -1,3 +1,3 @@
-# dynfmt
+# formatting
 
 Dynamic formatter for Rust
