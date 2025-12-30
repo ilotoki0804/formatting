@@ -4,12 +4,15 @@ use super::*;
 
 const WARN_FOR_USELESS_OPTIONS: bool = cfg!(debug_assertions);
 
-pub trait Formattable {
-    // type Error;
+#[cfg(feature = "anyhow")]
+type FormattableError = anyhow::Error;
+#[cfg(not(feature = "anyhow"))]
+type FormattableError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
-    // fn custom_format(&self, _: &str) -> Result<String, Self::Error> {
-    fn custom_format(&self, _: &str) -> TemplateResult<String> {
-        Err(TemplateError::NoViableCustomFormat)
+pub trait Formattable {
+    fn custom_format(&self, _: &str) -> Result<String, FormattableError> {
+        let result = Err(Box::new(TemplateError::NoViableCustomFormat))?;
+        Ok(result)
     }
     fn standard_format(&self, format: StandardFormat) -> Result<String, StandardFormatError>;
 }
@@ -323,7 +326,7 @@ impl<T: chrono::TimeZone> Formattable for chrono::DateTime<T>
 {
     impl_standard_format!(debug);
 
-    fn custom_format(&self, format: &str) -> TemplateResult<String> {
+    fn custom_format(&self, format: &str) -> Result<String, FormattableError> {
         Ok(self.format(format).to_string())
     }
 }

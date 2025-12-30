@@ -12,7 +12,6 @@ pub enum TemplateError {
     NoViableCustomFormat,
     #[error("Key {0:?} is not found.")]
     KeyNotFound(String),
-    // TODO: anyhow에서 실제 오류로 변환하기
     #[error("Key {0:?} is not found.")]
     StandardFormatError(StandardFormatError),
     // #[error("TemplateError: unexpected termination in state {:?}")]
@@ -21,8 +20,12 @@ pub enum TemplateError {
         state: State,
         next: Option<char>,
     },
+    #[cfg(feature = "anyhow")]
     #[error(transparent)]
     FormatError(#[from] anyhow::Error),
+    #[cfg(not(feature = "anyhow"))]
+    #[error(transparent)]
+    FormatError(#[from] Box<dyn std::error::Error + Send + Sync>),
 }
 
 pub type TemplateResult<T> = std::result::Result<T, TemplateError>;
