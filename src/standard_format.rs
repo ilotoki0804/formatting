@@ -1,4 +1,3 @@
-// use indicatif::ProgressStyle;
 use regex::Regex;
 
 use std::sync::OnceLock;
@@ -37,7 +36,7 @@ pub enum StandardFormatError {
     MinimumInteger(String),
 }
 
-pub type StandardResult<T> = std::result::Result<T, StandardFormatError>;
+pub(crate) type StandardResult<T> = std::result::Result<T, StandardFormatError>;
 
 fn standard_format() -> &'static Regex {
     static STANDARD_FORMAT: OnceLock<Regex> = OnceLock::new();
@@ -48,7 +47,7 @@ fn standard_format() -> &'static Regex {
     })
 }
 
-pub(super) fn parse_standard_format(format: &str) -> Result<StandardFormat, StandardFormatError> {
+pub(crate) fn parse_standard_format(format: &str) -> Result<StandardFormat, StandardFormatError> {
     if format.is_empty() {
         return Ok(Default::default());
     }
@@ -136,7 +135,7 @@ pub(super) fn parse_standard_format(format: &str) -> Result<StandardFormat, Stan
     })
 }
 
-pub fn fill(
+pub(crate) fn fill(
     mut value: String,
     width: Option<usize>,
     align: StandardFormatAlign,
@@ -199,33 +198,33 @@ pub fn fill(
 
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub struct StandardFormat {
-    pub filler: Option<StandardFormatOptionFill>,
-    pub sign: Option<StandardFormatSign>, // NUMERIC ONLY
-    pub z_option: bool,                   // FLOAT ONLY
-    pub sharp_option: bool,               // NON-FLOAT ONLY
-    pub digit: Option<u32>,
-    pub grouping: Option<StandardFormatGrouping>, // NUMERIC ONLY
-    pub precision: Option<u32>,                   // FLOAT ONLY
-    pub format_type: Option<StandardFormatType>,
+    pub(crate) filler: Option<StandardFormatOptionFill>,
+    pub(crate) sign: Option<StandardFormatSign>, // NUMERIC ONLY
+    pub(crate) z_option: bool,                   // FLOAT ONLY
+    pub(crate) sharp_option: bool,               // NON-FLOAT ONLY
+    pub(crate) digit: Option<u32>,
+    pub(crate) grouping: Option<StandardFormatGrouping>, // NUMERIC ONLY
+    pub(crate) precision: Option<u32>,                   // FLOAT ONLY
+    pub(crate) format_type: Option<StandardFormatType>,
 }
 
 #[derive(Default)]
-struct StandardFormatOption {
-    pub filler: Option<StandardFormatOptionFill>,
-    pub sign: Option<StandardFormatSign>,
-    pub z_option: bool,
-    pub sharp_option: bool,
+pub(crate) struct StandardFormatOption {
+    pub(crate) filler: Option<StandardFormatOptionFill>,
+    pub(crate) sign: Option<StandardFormatSign>,
+    pub(crate) z_option: bool,
+    pub(crate) sharp_option: bool,
 }
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
-pub struct StandardFormatOptionFill {
-    pub fill: Option<char>,
-    pub align: Option<StandardFormatAlign>,
-    pub truncate: bool,
+pub(crate) struct StandardFormatOptionFill {
+    pub(crate) fill: Option<char>,
+    pub(crate) align: Option<StandardFormatAlign>,
+    pub(crate) truncate: bool,
 }
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
-pub enum StandardFormatAlign {
+pub(crate) enum StandardFormatAlign {
     Left,
     Right,
     SignFirst, // NUMERIC ONLY
@@ -271,7 +270,7 @@ impl From<StandardFormatAlign> for char {
 }
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
-pub enum StandardFormatSign {
+pub(crate) enum StandardFormatSign {
     Minus,
     Plus,
     Space,
@@ -314,7 +313,7 @@ impl From<StandardFormatSign> for char {
 }
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
-pub enum StandardFormatGrouping {
+pub(crate) enum StandardFormatGrouping {
     Comma,
     Underscore,
 }

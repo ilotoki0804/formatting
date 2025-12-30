@@ -17,6 +17,7 @@ pub trait Formattable {
     fn standard_format(&self, format: StandardFormat) -> Result<String, StandardFormatError>;
 }
 
+#[macro_export]
 macro_rules! impl_standard_format {
     (display) => {
         impl_standard_format!(@normal_standard_format, __display_stringify__);
