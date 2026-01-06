@@ -37,7 +37,7 @@ macro_rules! format_template {
         {
             use $crate::Template;
             let calculated_template: Template = $template.parse().unwrap();
-            
+
             format_template!(calculated_template, $(
                 $key=$value,
             )*)
@@ -53,7 +53,7 @@ macro_rules! format_template {
                         $key: &'a dyn Formattable,
                     )*
                 }
-    
+
                 impl<'a> Getter for RuntimeGetter<'a> {
                     fn get_formattable(&self, key: &str) -> Option<&dyn Formattable> {
                         match key {
@@ -64,15 +64,15 @@ macro_rules! format_template {
                         }
                     }
                 }
-    
+
                 let runtime_getter = RuntimeGetter {
                     $(
                         $key: $value,
                     )*
                 };
-    
+
                 let result = $template.format(&runtime_getter)?;
-    
+
                 Ok(result)
             })();
             result
@@ -83,7 +83,7 @@ macro_rules! format_template {
         {
             use $crate::Template;
             let calculated_template: Template = $template.parse().unwrap();
-            
+
             format_template!(calculated_template, $(
                 $value,
             )*)
@@ -98,7 +98,7 @@ macro_rules! format_template {
                 struct RuntimeGetter<'a> {
                     args: [&'a dyn Formattable; ARG_COUNT],
                 }
-            
+
                 impl<'a> Getter for RuntimeGetter<'a> {
                     fn get_formattable(&self, key: &str) -> Option<&dyn Formattable> {
                         let key: usize = key.parse().ok()?;
@@ -108,11 +108,11 @@ macro_rules! format_template {
                         Some(self.args[key])
                     }
                 }
-            
+
                 let runtime_getter = RuntimeGetter {
                     args: [ $( $value ),* ],
                 };
-            
+
                 let result = $template.format(&runtime_getter)?;
 
                 Ok(result)
@@ -140,49 +140,48 @@ mod test {
 
     #[test]
     fn test_without_macro() {
-        let result: anyhow::Result<String> = (||{
+        let result: anyhow::Result<String> = (|| {
             let hello = "hmm".to_string();
             let num = 123;
-        
+
             struct RuntimeGetter<'a> {
                 hello: &'a dyn Formattable,
                 num: &'a dyn Formattable,
             }
-        
+
             impl<'a> Getter for RuntimeGetter<'a> {
                 fn get_formattable(&self, key: &str) -> Option<&dyn Formattable> {
                     match key {
                         stringify!(hello) => Some(self.hello),
                         stringify!(num) => Some(self.num),
-                        _ => None
+                        _ => None,
                     }
                 }
             }
-        
+
             let runtime_getter = RuntimeGetter {
                 hello: &hello,
                 num: &num,
             };
-        
+
             let template: Template = "hello {hello} num {num:04}".parse()?;
             let result = template.format(&runtime_getter)?;
-            
+
             Ok(result)
         })();
         assert_eq!(result.unwrap(), "hello hmm num 0123");
     }
-    
 
     #[test]
     fn test_without_macro_pos() {
-        let result: anyhow::Result<String> = (||{
+        let result: anyhow::Result<String> = (|| {
             let one = "hmm".to_string();
             let two = 123;
-        
+
             struct RuntimeGetter<'a> {
                 args: [&'a dyn Formattable; 2],
             }
-        
+
             impl<'a> Getter for RuntimeGetter<'a> {
                 fn get_formattable(&self, key: &str) -> Option<&dyn Formattable> {
                     let key: usize = key.parse().ok()?;
@@ -192,11 +191,9 @@ mod test {
                     Some(self.args[key])
                 }
             }
-        
-            let runtime_getter = RuntimeGetter {
-                args: [&one, &two],
-            };
-        
+
+            let runtime_getter = RuntimeGetter { args: [&one, &two] };
+
             let template: Template = "hello {} num {:04}".parse()?;
             let result = template.format(&runtime_getter)?;
 
@@ -211,11 +208,10 @@ mod test {
         let num = 123;
 
         let template: Template = "hello {hello} num {num:04}".parse().unwrap();
-        let result = format_template!(template, hello=&hello, num=&num).unwrap();
+        let result = format_template!(template, hello = &hello, num = &num).unwrap();
         assert_eq!(result, "hello hmm num 0123");
     }
-    
-    
+
     #[test]
     fn test_format_macro_pos() {
         let hello = "hmm".to_string();
@@ -225,16 +221,17 @@ mod test {
         let result = format_template!(template, &hello, &num).unwrap();
         assert_eq!(result, "hello hmm num 0123");
     }
-    
+
     #[test]
     fn test_literal_format_macro() {
         let hello = "hmm".to_string();
         let num = 123;
 
-        let result = format_template!("hello {hello} num {num:04}", hello=&hello, num=&num).unwrap();
+        let result =
+            format_template!("hello {hello} num {num:04}", hello = &hello, num = &num).unwrap();
         assert_eq!(result, "hello hmm num 0123");
     }
-    
+
     #[test]
     fn test_literal_format_macro_pos() {
         let hello = "hmm".to_string();

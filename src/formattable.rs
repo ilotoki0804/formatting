@@ -1,4 +1,4 @@
-use crate::{StandardFormatType, StandardFormatError};
+use crate::{StandardFormatError, StandardFormatType};
 
 use super::*;
 
@@ -323,7 +323,8 @@ impl Formattable for chrono::NaiveDateTime {
 
 #[cfg(feature = "chrono")]
 impl<T: chrono::TimeZone> Formattable for chrono::DateTime<T>
-    where T::Offset: std::fmt::Display
+where
+    T::Offset: std::fmt::Display,
 {
     impl_standard_format!(debug);
 
@@ -341,7 +342,9 @@ mod test {
         let to_format: &dyn Formattable = &123;
         // Sign
         assert_eq!(
-            to_format.standard_format(dbg!(parse_standard_format("+d").unwrap())).unwrap(),
+            to_format
+                .standard_format(dbg!(parse_standard_format("+d").unwrap()))
+                .unwrap(),
             "+123"
         );
     }
@@ -351,7 +354,9 @@ mod test {
     fn test_chrono() {
         use chrono::TimeZone;
 
-        let datetime: &dyn Formattable = &chrono::Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
+        let datetime: &dyn Formattable = &chrono::Utc
+            .with_ymd_and_hms(2014, 11, 28, 12, 0, 9)
+            .unwrap();
         let mapping = literal_map!({
             "datetime" => datetime,
         });
@@ -366,66 +371,98 @@ mod test {
 
         // Octal
         assert_eq!(
-            to_format.standard_format(parse_standard_format("o").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("o").unwrap())
+                .unwrap(),
             "173"
         );
 
         // Decimal
         assert_eq!(
-            to_format.standard_format(parse_standard_format("d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("d").unwrap())
+                .unwrap(),
             "123"
         );
 
         // Binary
         assert_eq!(
-            to_format.standard_format(parse_standard_format("b").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("b").unwrap())
+                .unwrap(),
             "1111011"
         );
 
         // Hex
         assert_eq!(
-            to_format.standard_format(parse_standard_format("x").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("x").unwrap())
+                .unwrap(),
             "7b"
         );
         assert_eq!(
-            to_format.standard_format(parse_standard_format("X").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("X").unwrap())
+                .unwrap(),
             "7B"
         );
 
         // Padding
         assert_eq!(
-            to_format.standard_format(parse_standard_format("05d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("05d").unwrap())
+                .unwrap(),
             "00123"
         );
         assert_eq!(
-            to_format.standard_format(parse_standard_format("5d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("5d").unwrap())
+                .unwrap(),
             "  123"
         );
 
         // Alignment
         assert_eq!(
-            to_format.standard_format(parse_standard_format("<5d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("<5d").unwrap())
+                .unwrap(),
             "123  "
         );
         assert_eq!(
-            to_format.standard_format(parse_standard_format(">5d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format(">5d").unwrap())
+                .unwrap(),
             "  123"
         );
         assert_eq!(
-            to_format.standard_format(parse_standard_format("^5d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("^5d").unwrap())
+                .unwrap(),
             " 123 "
         );
 
         // Sign
         assert_eq!(
-            to_format.standard_format(parse_standard_format("+d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("+d").unwrap())
+                .unwrap(),
             "+123"
         );
 
         let neg_format: &dyn Formattable = &-123;
-        assert_eq!(neg_format.standard_format(parse_standard_format("d").unwrap()).unwrap(), "-123");
+        assert_eq!(
+            neg_format
+                .standard_format(parse_standard_format("d").unwrap())
+                .unwrap(),
+            "-123"
+        );
 
-        assert_eq!(neg_format.standard_format(parse_standard_format("05d").unwrap()).unwrap(), "-0123");
+        assert_eq!(
+            neg_format
+                .standard_format(parse_standard_format("05d").unwrap())
+                .unwrap(),
+            "-0123"
+        );
 
         let n = 42;
 
@@ -440,7 +477,7 @@ mod test {
         // Hex
         let format = parse_standard_format("x").unwrap();
         assert_eq!(n.standard_format(format).unwrap(), "2a");
-        
+
         let format = parse_standard_format("#x").unwrap();
         assert_eq!(n.standard_format(format).unwrap(), "0x2a");
 
@@ -455,59 +492,81 @@ mod test {
 
         // Octal
         assert_eq!(
-            to_format.standard_format(parse_standard_format("o").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("o").unwrap())
+                .unwrap(),
             "173"
         );
 
         // Decimal
         assert_eq!(
-            to_format.standard_format(parse_standard_format("d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("d").unwrap())
+                .unwrap(),
             "123"
         );
 
         // Binary
         assert_eq!(
-            to_format.standard_format(parse_standard_format("b").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("b").unwrap())
+                .unwrap(),
             "1111011"
         );
 
         // Hex
         assert_eq!(
-            to_format.standard_format(parse_standard_format("x").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("x").unwrap())
+                .unwrap(),
             "7b"
         );
         assert_eq!(
-            to_format.standard_format(parse_standard_format("X").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("X").unwrap())
+                .unwrap(),
             "7B"
         );
 
         // Padding
         assert_eq!(
-            to_format.standard_format(parse_standard_format("05d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("05d").unwrap())
+                .unwrap(),
             "00123"
         );
         assert_eq!(
-            to_format.standard_format(parse_standard_format("5d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("5d").unwrap())
+                .unwrap(),
             "  123"
         );
 
         // Alignment
         assert_eq!(
-            to_format.standard_format(parse_standard_format("<5d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("<5d").unwrap())
+                .unwrap(),
             "123  "
         );
         assert_eq!(
-            to_format.standard_format(parse_standard_format(">5d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format(">5d").unwrap())
+                .unwrap(),
             "  123"
         );
         assert_eq!(
-            to_format.standard_format(parse_standard_format("^5d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("^5d").unwrap())
+                .unwrap(),
             " 123 "
         );
 
         // Sign
         assert_eq!(
-            to_format.standard_format(parse_standard_format("+d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("+d").unwrap())
+                .unwrap(),
             "+123"
         );
 
@@ -524,7 +583,7 @@ mod test {
         // Hex
         let format = parse_standard_format("x").unwrap();
         assert_eq!(n.standard_format(format).unwrap(), "2a");
-        
+
         let format = parse_standard_format("#x").unwrap();
         assert_eq!(n.standard_format(format).unwrap(), "0x2a");
 
@@ -538,30 +597,40 @@ mod test {
         let to_format: &dyn Formattable = &"hello".to_string();
 
         assert_eq!(
-            to_format.standard_format(parse_standard_format("s").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("s").unwrap())
+                .unwrap(),
             "hello"
         );
         assert_eq!(
-            to_format.standard_format(parse_standard_format("10s").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("10s").unwrap())
+                .unwrap(),
             "hello     "
         );
 
         assert_eq!(
-            to_format.standard_format(parse_standard_format(">10s").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format(">10s").unwrap())
+                .unwrap(),
             "     hello"
         );
         assert_eq!(
-            to_format.standard_format(parse_standard_format("^10s").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("^10s").unwrap())
+                .unwrap(),
             "  hello   "
         );
 
         assert_eq!(
-            to_format.standard_format(parse_standard_format("!3s").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("!3s").unwrap())
+                .unwrap(),
             "hel"
         );
 
         let s = "hello".to_string();
-        
+
         // Default
         let format = parse_standard_format("").unwrap();
         assert_eq!(s.standard_format(format).unwrap(), "hello");
@@ -582,11 +651,13 @@ mod test {
 
         // Debug
         assert_eq!(
-            s.standard_format(parse_standard_format("?").unwrap()).unwrap(),
+            s.standard_format(parse_standard_format("?").unwrap())
+                .unwrap(),
             "\"hello\""
         );
         assert_eq!(
-            s.standard_format(parse_standard_format("#?").unwrap()).unwrap(),
+            s.standard_format(parse_standard_format("#?").unwrap())
+                .unwrap(),
             "\"hello\""
         );
     }
@@ -594,17 +665,31 @@ mod test {
     #[test]
     fn test_formattable_char() {
         let c = 'a';
-        assert_eq!(c.standard_format(parse_standard_format("").unwrap()).unwrap(), "a");
-        assert_eq!(c.standard_format(parse_standard_format("3").unwrap()).unwrap(), "a  ");
-        assert_eq!(c.standard_format(parse_standard_format(">3").unwrap()).unwrap(), "  a");
+        assert_eq!(
+            c.standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "a"
+        );
+        assert_eq!(
+            c.standard_format(parse_standard_format("3").unwrap())
+                .unwrap(),
+            "a  "
+        );
+        assert_eq!(
+            c.standard_format(parse_standard_format(">3").unwrap())
+                .unwrap(),
+            "  a"
+        );
 
         // Debug
         assert_eq!(
-            c.standard_format(parse_standard_format("?").unwrap()).unwrap(),
+            c.standard_format(parse_standard_format("?").unwrap())
+                .unwrap(),
             "'a'"
         );
         assert_eq!(
-            c.standard_format(parse_standard_format("#?").unwrap()).unwrap(),
+            c.standard_format(parse_standard_format("#?").unwrap())
+                .unwrap(),
             "'a'"
         );
     }
@@ -612,18 +697,36 @@ mod test {
     #[test]
     fn test_formattable_str() {
         let s = "hello";
-        assert_eq!(s.standard_format(parse_standard_format("").unwrap()).unwrap(), "hello");
-        assert_eq!(s.standard_format(parse_standard_format("10").unwrap()).unwrap(), "hello     ");
-        assert_eq!(s.standard_format(parse_standard_format(">10").unwrap()).unwrap(), "     hello");
-        assert_eq!(s.standard_format(parse_standard_format("!3").unwrap()).unwrap(), "hel");
+        assert_eq!(
+            s.standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "hello"
+        );
+        assert_eq!(
+            s.standard_format(parse_standard_format("10").unwrap())
+                .unwrap(),
+            "hello     "
+        );
+        assert_eq!(
+            s.standard_format(parse_standard_format(">10").unwrap())
+                .unwrap(),
+            "     hello"
+        );
+        assert_eq!(
+            s.standard_format(parse_standard_format("!3").unwrap())
+                .unwrap(),
+            "hel"
+        );
 
         // Debug
         assert_eq!(
-            s.standard_format(parse_standard_format("?").unwrap()).unwrap(),
+            s.standard_format(parse_standard_format("?").unwrap())
+                .unwrap(),
             "\"hello\""
         );
         assert_eq!(
-            s.standard_format(parse_standard_format("#?").unwrap()).unwrap(),
+            s.standard_format(parse_standard_format("#?").unwrap())
+                .unwrap(),
             "\"hello\""
         );
     }
@@ -631,67 +734,152 @@ mod test {
     #[test]
     fn test_formattable_dyn_str() {
         let hello: &dyn Formattable = &"hello";
-        assert_eq!(hello.standard_format(parse_standard_format("").unwrap()).unwrap(), "hello");
+        assert_eq!(
+            hello
+                .standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "hello"
+        );
     }
 
     #[test]
     fn test_formattable_i8() {
         let n = 42i8;
-        assert_eq!(n.standard_format(parse_standard_format("").unwrap()).unwrap(), "42");
-        assert_eq!(n.standard_format(parse_standard_format("04").unwrap()).unwrap(), "0042");
-        assert_eq!((-n).standard_format(parse_standard_format("04").unwrap()).unwrap(), "-042");
+        assert_eq!(
+            n.standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "42"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "0042"
+        );
+        assert_eq!(
+            (-n).standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "-042"
+        );
     }
 
     #[test]
     fn test_formattable_i16() {
         let n = 42i16;
-        assert_eq!(n.standard_format(parse_standard_format("").unwrap()).unwrap(), "42");
-        assert_eq!(n.standard_format(parse_standard_format("04").unwrap()).unwrap(), "0042");
-        assert_eq!((-n).standard_format(parse_standard_format("04").unwrap()).unwrap(), "-042");
+        assert_eq!(
+            n.standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "42"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "0042"
+        );
+        assert_eq!(
+            (-n).standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "-042"
+        );
     }
 
     #[test]
     fn test_formattable_i64() {
         let n = 42i64;
-        assert_eq!(n.standard_format(parse_standard_format("").unwrap()).unwrap(), "42");
-        assert_eq!(n.standard_format(parse_standard_format("04").unwrap()).unwrap(), "0042");
-        assert_eq!((-n).standard_format(parse_standard_format("04").unwrap()).unwrap(), "-042");
+        assert_eq!(
+            n.standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "42"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "0042"
+        );
+        assert_eq!(
+            (-n).standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "-042"
+        );
     }
 
     #[test]
     fn test_formattable_i128() {
         let n = 42i128;
-        assert_eq!(n.standard_format(parse_standard_format("").unwrap()).unwrap(), "42");
-        assert_eq!(n.standard_format(parse_standard_format("04").unwrap()).unwrap(), "0042");
-        assert_eq!((-n).standard_format(parse_standard_format("04").unwrap()).unwrap(), "-042");
+        assert_eq!(
+            n.standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "42"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "0042"
+        );
+        assert_eq!(
+            (-n).standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "-042"
+        );
     }
 
     #[test]
     fn test_formattable_u8() {
         let n = 42u8;
-        assert_eq!(n.standard_format(parse_standard_format("").unwrap()).unwrap(), "42");
-        assert_eq!(n.standard_format(parse_standard_format("04").unwrap()).unwrap(), "0042");
+        assert_eq!(
+            n.standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "42"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "0042"
+        );
     }
 
     #[test]
     fn test_formattable_u16() {
         let n = 42u16;
-        assert_eq!(n.standard_format(parse_standard_format("").unwrap()).unwrap(), "42");
-        assert_eq!(n.standard_format(parse_standard_format("04").unwrap()).unwrap(), "0042");
+        assert_eq!(
+            n.standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "42"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "0042"
+        );
     }
 
     #[test]
     fn test_formattable_u64() {
         let n = 42u64;
-        assert_eq!(n.standard_format(parse_standard_format("").unwrap()).unwrap(), "42");
-        assert_eq!(n.standard_format(parse_standard_format("04").unwrap()).unwrap(), "0042");
+        assert_eq!(
+            n.standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "42"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "0042"
+        );
     }
 
     #[test]
     fn test_formattable_u128() {
         let n = 42u128;
-        assert_eq!(n.standard_format(parse_standard_format("").unwrap()).unwrap(), "42");
-        assert_eq!(n.standard_format(parse_standard_format("04").unwrap()).unwrap(), "0042");
+        assert_eq!(
+            n.standard_format(parse_standard_format("").unwrap())
+                .unwrap(),
+            "42"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("04").unwrap())
+                .unwrap(),
+            "0042"
+        );
     }
 
     #[test]
@@ -705,54 +893,173 @@ mod test {
         let nan = f32::NAN;
 
         // Basic FloatLower
-        assert_eq!(n.standard_format(parse_standard_format("f").unwrap()).unwrap(), "123.456");
-        assert_eq!(neg.standard_format(parse_standard_format("f").unwrap()).unwrap(), "-123.456");
-        assert_eq!(zero.standard_format(parse_standard_format("f").unwrap()).unwrap(), "0");
-        
+        assert_eq!(
+            n.standard_format(parse_standard_format("f").unwrap())
+                .unwrap(),
+            "123.456"
+        );
+        assert_eq!(
+            neg.standard_format(parse_standard_format("f").unwrap())
+                .unwrap(),
+            "-123.456"
+        );
+        assert_eq!(
+            zero.standard_format(parse_standard_format("f").unwrap())
+                .unwrap(),
+            "0"
+        );
+
         // Negative zero behavior (without z_option)
-        assert_eq!(neg_zero.standard_format(parse_standard_format("f").unwrap()).unwrap(), "-0");
+        assert_eq!(
+            neg_zero
+                .standard_format(parse_standard_format("f").unwrap())
+                .unwrap(),
+            "-0"
+        );
 
         // Precision
-        assert_eq!(n.standard_format(parse_standard_format(".2f").unwrap()).unwrap(), "123.46");
-        assert_eq!(n.standard_format(parse_standard_format(".0f").unwrap()).unwrap(), "123");
-        assert_eq!(n.standard_format(parse_standard_format(".5f").unwrap()).unwrap(), "123.45600");
-        assert_eq!(neg_inf.standard_format(parse_standard_format("f").unwrap()).unwrap(), "-inf");
-        assert_eq!(neg_inf.standard_format(parse_standard_format("=5f").unwrap()).unwrap(), "- inf");
+        assert_eq!(
+            n.standard_format(parse_standard_format(".2f").unwrap())
+                .unwrap(),
+            "123.46"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format(".0f").unwrap())
+                .unwrap(),
+            "123"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format(".5f").unwrap())
+                .unwrap(),
+            "123.45600"
+        );
+        assert_eq!(
+            neg_inf
+                .standard_format(parse_standard_format("f").unwrap())
+                .unwrap(),
+            "-inf"
+        );
+        assert_eq!(
+            neg_inf
+                .standard_format(parse_standard_format("=5f").unwrap())
+                .unwrap(),
+            "- inf"
+        );
 
         // FloatUpper
-        assert_eq!(n.standard_format(parse_standard_format("F").unwrap()).unwrap(), "123.456");
-        assert_eq!(inf.standard_format(parse_standard_format("F").unwrap()).unwrap(), "INF");
-        assert_eq!(nan.standard_format(parse_standard_format("F").unwrap()).unwrap(), "NAN");
+        assert_eq!(
+            n.standard_format(parse_standard_format("F").unwrap())
+                .unwrap(),
+            "123.456"
+        );
+        assert_eq!(
+            inf.standard_format(parse_standard_format("F").unwrap())
+                .unwrap(),
+            "INF"
+        );
+        assert_eq!(
+            nan.standard_format(parse_standard_format("F").unwrap())
+                .unwrap(),
+            "NAN"
+        );
 
         // Percent
         let p = 0.1234f32;
-        assert_eq!(p.standard_format(parse_standard_format("%").unwrap()).unwrap(), "12.34%");
-        assert_eq!(p.standard_format(parse_standard_format(".1%").unwrap()).unwrap(), "12.3%");
+        assert_eq!(
+            p.standard_format(parse_standard_format("%").unwrap())
+                .unwrap(),
+            "12.34%"
+        );
+        assert_eq!(
+            p.standard_format(parse_standard_format(".1%").unwrap())
+                .unwrap(),
+            "12.3%"
+        );
 
         // Padding and Alignment
-        assert_eq!(n.standard_format(parse_standard_format("10f").unwrap()).unwrap(), "   123.456");
-        assert_eq!(n.standard_format(parse_standard_format("<10f").unwrap()).unwrap(), "123.456   ");
-        assert_eq!(n.standard_format(parse_standard_format("^10f").unwrap()).unwrap(), " 123.456  ");
-        assert_eq!(n.standard_format(parse_standard_format(">10f").unwrap()).unwrap(), "   123.456");
+        assert_eq!(
+            n.standard_format(parse_standard_format("10f").unwrap())
+                .unwrap(),
+            "   123.456"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("<10f").unwrap())
+                .unwrap(),
+            "123.456   "
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("^10f").unwrap())
+                .unwrap(),
+            " 123.456  "
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format(">10f").unwrap())
+                .unwrap(),
+            "   123.456"
+        );
 
         // Zero Padding
-        assert_eq!(n.standard_format(parse_standard_format("010f").unwrap()).unwrap(), "000123.456");
-        assert_eq!(neg.standard_format(parse_standard_format("010f").unwrap()).unwrap(), "-00123.456");
+        assert_eq!(
+            n.standard_format(parse_standard_format("010f").unwrap())
+                .unwrap(),
+            "000123.456"
+        );
+        assert_eq!(
+            neg.standard_format(parse_standard_format("010f").unwrap())
+                .unwrap(),
+            "-00123.456"
+        );
 
         // Sign options
-        assert_eq!(n.standard_format(parse_standard_format("+f").unwrap()).unwrap(), "+123.456");
-        assert_eq!(neg.standard_format(parse_standard_format("+f").unwrap()).unwrap(), "-123.456");
-        assert_eq!(zero.standard_format(parse_standard_format("+f").unwrap()).unwrap(), "+0");
-        assert_eq!(n.standard_format(parse_standard_format(" f").unwrap()).unwrap(), " 123.456");
-        assert_eq!(neg.standard_format(parse_standard_format(" f").unwrap()).unwrap(), "-123.456");
+        assert_eq!(
+            n.standard_format(parse_standard_format("+f").unwrap())
+                .unwrap(),
+            "+123.456"
+        );
+        assert_eq!(
+            neg.standard_format(parse_standard_format("+f").unwrap())
+                .unwrap(),
+            "-123.456"
+        );
+        assert_eq!(
+            zero.standard_format(parse_standard_format("+f").unwrap())
+                .unwrap(),
+            "+0"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format(" f").unwrap())
+                .unwrap(),
+            " 123.456"
+        );
+        assert_eq!(
+            neg.standard_format(parse_standard_format(" f").unwrap())
+                .unwrap(),
+            "-123.456"
+        );
 
         // Complex combinations
-        assert_eq!(n.standard_format(parse_standard_format("+010.2f").unwrap()).unwrap(), "+000123.46");
-        assert_eq!(neg.standard_format(parse_standard_format("+010.2f").unwrap()).unwrap(), "-000123.46");
-        
+        assert_eq!(
+            n.standard_format(parse_standard_format("+010.2f").unwrap())
+                .unwrap(),
+            "+000123.46"
+        );
+        assert_eq!(
+            neg.standard_format(parse_standard_format("+010.2f").unwrap())
+                .unwrap(),
+            "-000123.46"
+        );
+
         // Special values with padding
-        assert_eq!(inf.standard_format(parse_standard_format("5f").unwrap()).unwrap(), "  inf");
-        assert_eq!(nan.standard_format(parse_standard_format("5f").unwrap()).unwrap(), "  NaN");
+        assert_eq!(
+            inf.standard_format(parse_standard_format("5f").unwrap())
+                .unwrap(),
+            "  inf"
+        );
+        assert_eq!(
+            nan.standard_format(parse_standard_format("5f").unwrap())
+                .unwrap(),
+            "  NaN"
+        );
     }
 
     #[test]
@@ -766,53 +1073,172 @@ mod test {
         let nan = f64::NAN;
 
         // Basic FloatLower
-        assert_eq!(n.standard_format(parse_standard_format("f").unwrap()).unwrap(), "123.456");
-        assert_eq!(neg.standard_format(parse_standard_format("f").unwrap()).unwrap(), "-123.456");
-        assert_eq!(zero.standard_format(parse_standard_format("f").unwrap()).unwrap(), "0");
-        
+        assert_eq!(
+            n.standard_format(parse_standard_format("f").unwrap())
+                .unwrap(),
+            "123.456"
+        );
+        assert_eq!(
+            neg.standard_format(parse_standard_format("f").unwrap())
+                .unwrap(),
+            "-123.456"
+        );
+        assert_eq!(
+            zero.standard_format(parse_standard_format("f").unwrap())
+                .unwrap(),
+            "0"
+        );
+
         // Negative zero behavior (without z_option)
-        assert_eq!(neg_zero.standard_format(parse_standard_format("f").unwrap()).unwrap(), "-0");
+        assert_eq!(
+            neg_zero
+                .standard_format(parse_standard_format("f").unwrap())
+                .unwrap(),
+            "-0"
+        );
 
         // Precision
-        assert_eq!(n.standard_format(parse_standard_format(".2f").unwrap()).unwrap(), "123.46");
-        assert_eq!(n.standard_format(parse_standard_format(".0f").unwrap()).unwrap(), "123");
-        assert_eq!(n.standard_format(parse_standard_format(".5f").unwrap()).unwrap(), "123.45600");
-        assert_eq!(neg_inf.standard_format(parse_standard_format("f").unwrap()).unwrap(), "-inf");
-        assert_eq!(neg_inf.standard_format(parse_standard_format("=5f").unwrap()).unwrap(), "- inf");
+        assert_eq!(
+            n.standard_format(parse_standard_format(".2f").unwrap())
+                .unwrap(),
+            "123.46"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format(".0f").unwrap())
+                .unwrap(),
+            "123"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format(".5f").unwrap())
+                .unwrap(),
+            "123.45600"
+        );
+        assert_eq!(
+            neg_inf
+                .standard_format(parse_standard_format("f").unwrap())
+                .unwrap(),
+            "-inf"
+        );
+        assert_eq!(
+            neg_inf
+                .standard_format(parse_standard_format("=5f").unwrap())
+                .unwrap(),
+            "- inf"
+        );
 
         // FloatUpper
-        assert_eq!(n.standard_format(parse_standard_format("F").unwrap()).unwrap(), "123.456");
-        assert_eq!(inf.standard_format(parse_standard_format("F").unwrap()).unwrap(), "INF");
-        assert_eq!(nan.standard_format(parse_standard_format("F").unwrap()).unwrap(), "NAN");
+        assert_eq!(
+            n.standard_format(parse_standard_format("F").unwrap())
+                .unwrap(),
+            "123.456"
+        );
+        assert_eq!(
+            inf.standard_format(parse_standard_format("F").unwrap())
+                .unwrap(),
+            "INF"
+        );
+        assert_eq!(
+            nan.standard_format(parse_standard_format("F").unwrap())
+                .unwrap(),
+            "NAN"
+        );
 
         // Percent
         let p = 0.1234f32;
-        assert_eq!(p.standard_format(parse_standard_format("%").unwrap()).unwrap(), "12.34%");
-        assert_eq!(p.standard_format(parse_standard_format(".1%").unwrap()).unwrap(), "12.3%");
+        assert_eq!(
+            p.standard_format(parse_standard_format("%").unwrap())
+                .unwrap(),
+            "12.34%"
+        );
+        assert_eq!(
+            p.standard_format(parse_standard_format(".1%").unwrap())
+                .unwrap(),
+            "12.3%"
+        );
 
         // Padding and Alignment
-        assert_eq!(n.standard_format(parse_standard_format("10f").unwrap()).unwrap(), "   123.456");
-        assert_eq!(n.standard_format(parse_standard_format("<10f").unwrap()).unwrap(), "123.456   ");
-        assert_eq!(n.standard_format(parse_standard_format("^10f").unwrap()).unwrap(), " 123.456  ");
-        assert_eq!(n.standard_format(parse_standard_format(">10f").unwrap()).unwrap(), "   123.456");
+        assert_eq!(
+            n.standard_format(parse_standard_format("10f").unwrap())
+                .unwrap(),
+            "   123.456"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("<10f").unwrap())
+                .unwrap(),
+            "123.456   "
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format("^10f").unwrap())
+                .unwrap(),
+            " 123.456  "
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format(">10f").unwrap())
+                .unwrap(),
+            "   123.456"
+        );
 
         // Zero Padding
-        assert_eq!(n.standard_format(parse_standard_format("010f").unwrap()).unwrap(), "000123.456");
-        assert_eq!(neg.standard_format(parse_standard_format("010f").unwrap()).unwrap(), "-00123.456");
+        assert_eq!(
+            n.standard_format(parse_standard_format("010f").unwrap())
+                .unwrap(),
+            "000123.456"
+        );
+        assert_eq!(
+            neg.standard_format(parse_standard_format("010f").unwrap())
+                .unwrap(),
+            "-00123.456"
+        );
 
         // Sign options
-        assert_eq!(n.standard_format(parse_standard_format("+f").unwrap()).unwrap(), "+123.456");
-        assert_eq!(neg.standard_format(parse_standard_format("+f").unwrap()).unwrap(), "-123.456");
-        assert_eq!(zero.standard_format(parse_standard_format("+f").unwrap()).unwrap(), "+0");
-        assert_eq!(n.standard_format(parse_standard_format(" f").unwrap()).unwrap(), " 123.456");
-        assert_eq!(neg.standard_format(parse_standard_format(" f").unwrap()).unwrap(), "-123.456");
+        assert_eq!(
+            n.standard_format(parse_standard_format("+f").unwrap())
+                .unwrap(),
+            "+123.456"
+        );
+        assert_eq!(
+            neg.standard_format(parse_standard_format("+f").unwrap())
+                .unwrap(),
+            "-123.456"
+        );
+        assert_eq!(
+            zero.standard_format(parse_standard_format("+f").unwrap())
+                .unwrap(),
+            "+0"
+        );
+        assert_eq!(
+            n.standard_format(parse_standard_format(" f").unwrap())
+                .unwrap(),
+            " 123.456"
+        );
+        assert_eq!(
+            neg.standard_format(parse_standard_format(" f").unwrap())
+                .unwrap(),
+            "-123.456"
+        );
 
         // Complex combinations
-        assert_eq!(n.standard_format(parse_standard_format("+010.2f").unwrap()).unwrap(), "+000123.46");
-        assert_eq!(neg.standard_format(parse_standard_format("+010.2f").unwrap()).unwrap(), "-000123.46");
-        
+        assert_eq!(
+            n.standard_format(parse_standard_format("+010.2f").unwrap())
+                .unwrap(),
+            "+000123.46"
+        );
+        assert_eq!(
+            neg.standard_format(parse_standard_format("+010.2f").unwrap())
+                .unwrap(),
+            "-000123.46"
+        );
+
         // Special values with padding
-        assert_eq!(inf.standard_format(parse_standard_format("5f").unwrap()).unwrap(), "  inf");
-        assert_eq!(nan.standard_format(parse_standard_format("5f").unwrap()).unwrap(), "  NaN");
+        assert_eq!(
+            inf.standard_format(parse_standard_format("5f").unwrap())
+                .unwrap(),
+            "  inf"
+        );
+        assert_eq!(
+            nan.standard_format(parse_standard_format("5f").unwrap())
+                .unwrap(),
+            "  NaN"
+        );
     }
 }

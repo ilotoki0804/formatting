@@ -16,10 +16,7 @@ pub enum TemplateError {
     StandardFormatError(StandardFormatError),
     // #[error("TemplateError: unexpected termination in state {:?}")]
     #[error("TemplateError: unexpected character {state:?} in state {next:?}")]
-    UnexpectedState {
-        state: State,
-        next: Option<char>,
-    },
+    UnexpectedState { state: State, next: Option<char> },
     #[cfg(feature = "anyhow")]
     #[error(transparent)]
     FormatError(#[from] anyhow::Error),
@@ -142,16 +139,22 @@ impl Template {
                         if let Some(custom_format) = custom_format {
                             let result = formattable.custom_format(custom_format)?;
                             if let Some(standard_format) = standard_format {
-                                result.standard_format(standard_format.clone()).map_err(TemplateError::StandardFormatError)?
+                                result
+                                    .standard_format(standard_format.clone())
+                                    .map_err(TemplateError::StandardFormatError)?
                             } else {
                                 result
                             }
                         } else {
-                            formattable.standard_format(standard_format.clone().unwrap_or_default()).map_err(TemplateError::StandardFormatError)?
+                            formattable
+                                .standard_format(standard_format.clone().unwrap_or_default())
+                                .map_err(TemplateError::StandardFormatError)?
                         }
                     } else {
                         if !no_key_ok {
-                            return Err(TemplateError::KeyNotFound(key.clone().unwrap_or(index.to_string())));
+                            return Err(TemplateError::KeyNotFound(
+                                key.clone().unwrap_or(index.to_string()),
+                            ));
                         }
                         String::new()
                     };
@@ -191,7 +194,11 @@ impl FromStr for Template {
                 }
                 (MaybeOpen, '}') => {
                     parts.push(TemplatePart::Literal(mem::take(&mut buffer)));
-                    parts.push(TemplatePart::Interpolation { key: None, standard_format: None, custom_format: None });
+                    parts.push(TemplatePart::Interpolation {
+                        key: None,
+                        standard_format: None,
+                        custom_format: None,
+                    });
                     Literal
                 }
                 (MaybeOpen, ':') => {
@@ -218,7 +225,10 @@ impl FromStr for Template {
                     let format = if taken.is_empty() {
                         None
                     } else {
-                        Some(parse_standard_format(&taken).map_err(TemplateError::StandardFormatError)?)
+                        Some(
+                            parse_standard_format(&taken)
+                                .map_err(TemplateError::StandardFormatError)?,
+                        )
                     };
                     let custom_format = mem::take(&mut custom_format_buffer);
                     let key = mem::take(&mut buffer);
@@ -440,7 +450,10 @@ mod test {
         map.insert("name".to_string(), Box::new("Alice".to_string()));
         map.insert("age".to_string(), Box::new(20));
 
-        assert_eq!(template.format(&map).unwrap(), "Hello, Alice! You are 20 years old.");
+        assert_eq!(
+            template.format(&map).unwrap(),
+            "Hello, Alice! You are 20 years old."
+        );
     }
 
     #[test]

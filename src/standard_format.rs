@@ -54,7 +54,9 @@ pub(crate) fn parse_standard_format(format: &str) -> Result<StandardFormat, Stan
 
     // unwrap()로 처리된 구문의 경우 regex에 의해 성공적으로 파싱되었다면 절대 일어날 수 없는 일들이기 때문에 unwrap로 처리함.
     // 만약 unwrap() 구문으로 인해 panic이 발생할 경우 regex 구문이나 코드에 문제가 있다는 의미이니 수정해야 함.
-    let captured = standard_format().captures(format).ok_or_else(|| StandardFormatError::InvalidFormat(format.to_string()))?;
+    let captured = standard_format()
+        .captures(format)
+        .ok_or_else(|| StandardFormatError::InvalidFormat(format.to_string()))?;
     // let captured = dbg!(captured);
     let format_option = captured.name("options").map(|_| {
         let zero_option = captured.name("zero_option").is_some();
@@ -167,7 +169,11 @@ pub(crate) fn fill(
             }
             StandardFormatAlign::Center => (excess / 2, cols - excess.saturating_sub(excess / 2)),
         };
-        return Ok(value.chars().skip(start).take(end - start).collect::<String>());
+        return Ok(value
+            .chars()
+            .skip(start)
+            .take(end - start)
+            .collect::<String>());
     }
 
     let diff = width.saturating_sub(cols);
@@ -297,7 +303,7 @@ impl TryFrom<char> for StandardFormatSign {
             '-' => Ok(Self::Minus),
             '+' => Ok(Self::Plus),
             ' ' => Ok(Self::Space),
-            _ => Err(StandardFormatError::InvalidSign(Some(value)))
+            _ => Err(StandardFormatError::InvalidSign(Some(value))),
         }
     }
 }
@@ -453,7 +459,10 @@ mod tests {
         assert_eq!(filler.align, Some(StandardFormatAlign::Left));
 
         // Empty
-        assert_eq!(parse_standard_format("").unwrap(), StandardFormat::default());
+        assert_eq!(
+            parse_standard_format("").unwrap(),
+            StandardFormat::default()
+        );
 
         // Digit
         let format = parse_standard_format("10").unwrap();
@@ -589,7 +598,7 @@ mod tests {
             None,
             ' ',
         );
-        
+
         // If it doesn't panic, check the result
         if let Ok(s) = res {
             assert_eq!(s, "한");
@@ -600,19 +609,27 @@ mod tests {
     fn test_formattable_i32_edge_cases() {
         let to_format: &dyn Formattable = &0;
         assert_eq!(
-            to_format.standard_format(parse_standard_format("d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("d").unwrap())
+                .unwrap(),
             "0"
         );
 
         let to_format: &dyn Formattable = &i32::MAX;
         assert_eq!(
-            to_format.standard_format(parse_standard_format("d").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format("d").unwrap())
+                .unwrap(),
             "2147483647"
         );
 
         // 현재는 포매팅 불가
         let to_format: &dyn Formattable = &i32::MIN;
-        assert!(to_format.standard_format(parse_standard_format("d").unwrap()).is_err());
+        assert!(
+            to_format
+                .standard_format(parse_standard_format("d").unwrap())
+                .is_err()
+        );
         // assert_eq!(
         //     to_format.standard_format(parse_standard_format("d").unwrap()).unwrap(),
         //     "-2147483648"
@@ -622,10 +639,12 @@ mod tests {
     #[test]
     fn test_formattable_string_unicode() {
         let to_format: &dyn Formattable = &"한글".to_string();
-        
+
         // Width 4, align right. "  한글" (2 spaces + 2 chars)
         assert_eq!(
-            to_format.standard_format(parse_standard_format(">4s").unwrap()).unwrap(),
+            to_format
+                .standard_format(parse_standard_format(">4s").unwrap())
+                .unwrap(),
             "  한글"
         );
     }
