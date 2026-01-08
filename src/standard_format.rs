@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 #[derive(thiserror::Error, Debug)]
 pub enum StandardFormatError {
@@ -38,14 +38,11 @@ pub enum StandardFormatError {
 
 pub(crate) type StandardResult<T> = std::result::Result<T, StandardFormatError>;
 
-fn standard_format() -> &'static Regex {
-    static STANDARD_FORMAT: OnceLock<Regex> = OnceLock::new();
-    STANDARD_FORMAT.get_or_init(|| {
-        // let pattern = r##;
-        let pattern = r#"^(?P<options>(?P<filler>((?P<align1>[<>=^])?|(?P<fill>.)?(?P<align2>[<>=^])?)(?P<truncate>!)?)?(?P<sign>[-+ ])?(?P<z_option>z)?(?P<sharp_option>#)?(?P<zero_option>0)?)?(?P<digit>[1-9]\d*)?(?P<grouping>[,_])?(?:\.(?P<precision>\d+))?(?P<type>[bcdeEfFgGnosxX%?])?$"#;
-        regex::Regex::new(pattern).unwrap()
-    })
-}
+static STANDARD_FORMAT: LazyLock<Regex> = LazyLock::new(|| {
+    // let pattern = r##;
+    let pattern = r#"^(?P<options>(?P<filler>((?P<align1>[<>=^])?|(?P<fill>.)?(?P<align2>[<>=^])?)(?P<truncate>!)?)?(?P<sign>[-+ ])?(?P<z_option>z)?(?P<sharp_option>#)?(?P<zero_option>0)?)?(?P<digit>[1-9]\d*)?(?P<grouping>[,_])?(?:\.(?P<precision>\d+))?(?P<type>[bcdeEfFgGnosxX%?])?$"#;
+    regex::Regex::new(pattern).unwrap()
+});
 
 pub(crate) fn parse_standard_format(format: &str) -> Result<StandardFormat, StandardFormatError> {
     if format.is_empty() {
@@ -54,7 +51,7 @@ pub(crate) fn parse_standard_format(format: &str) -> Result<StandardFormat, Stan
 
     // unwrap()로 처리된 구문의 경우 regex에 의해 성공적으로 파싱되었다면 절대 일어날 수 없는 일들이기 때문에 unwrap로 처리함.
     // 만약 unwrap() 구문으로 인해 panic이 발생할 경우 regex 구문이나 코드에 문제가 있다는 의미이니 수정해야 함.
-    let captured = standard_format()
+    let captured = STANDARD_FORMAT
         .captures(format)
         .ok_or_else(|| StandardFormatError::InvalidFormat(format.to_string()))?;
     // let captured = dbg!(captured);
